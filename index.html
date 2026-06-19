@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>മദ്റസ പരീക്ഷാ ഫലം</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 500px; background: white; margin: 30px auto; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; margin-bottom: 20px; }
+        label { display: block; text-align: left; margin: 10px 0 5px; font-weight: bold; color: #555; }
+        select, input, button { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        button { background-color: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #219653; }
+        .result-box { margin-top: 20px; padding: 20px; border: 1px solid #ddd; background: #fafafa; border-radius: 5px; text-align: left; display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>മദ്റസ പരീക്ഷാ റിസൾട്ട്</h2>
+    
+    <label for="classSelect">ക്ലാസ് തിരഞ്ഞെടുക്കുക:</label>
+    <select id="classSelect">
+        <option value="">-- Select Class --</option>
+        <option value="1">Class 1</option>
+        <option value="2">Class 2</option>
+        <option value="3">Class 3</option>
+        <option value="4">Class 4</option>
+        <option value="5">Class 5</option>
+        <option value="6">Class 6</option>
+        <option value="7">Class 7</option>
+        <option value="8">Class 8</option>
+        <option value="9">Class 9</option>
+        <option value="10">Class 10</option>
+    </select>
+
+    <label for="admissionNo">അഡ്മിഷൻ നമ്പർ:</label>
+    <input type="number" id="admissionNo" placeholder="Enter Admission Number">
+
+    <button onclick="checkResult()">റിസൾട്ട് കാണുക</button>
+
+    <div id="loader" style="display:none; color: #3498db; font-weight: bold;">വിവരങ്ങൾ ശേഖരിക്കുന്നു...</div>
+
+    <div id="resultBox" class="result-box">
+        <h3>പരീക്ഷാ ഫലം</h3>
+        <p><strong>വിദ്യാർത്ഥിയുടെ പേര്:</strong> <span id="resName"></span></p>
+        <p><strong>ക്ലാസ്:</strong> <span id="resClass"></span> | <strong>അഡ്മിഷൻ നമ്പർ:</strong> <span id="resNo"></span></p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>വിഷയം</th>
+                    <th>മാർക്ക്</th>
+                </tr>
+            </thead>
+            <tbody id="marksBody">
+            </tbody>
+        </table>
+        
+        <p style="margin-top:15px;"><strong>ആകെ മാർക്ക്:</strong> <span id="resTotal"></span></p>
+        <p><strong>ഫലം:</strong> <span id="resStatus"></span></p>
+    </div>
+</div>
+
+<script>
+function checkResult() {
+    var cls = document.getElementById("classSelect").value;
+    var adm = document.getElementById("admissionNo").value;
+    var resultBox = document.getElementById("resultBox");
+    var loader = document.getElementById("loader");
+
+    if(!cls || !adm) {
+        alert("ദയവായി ക്ലാസും അഡ്മിഷൻ നമ്പറും നൽകുക.");
+        return;
+    }
+
+    loader.style.display = "block";
+    resultBox.style.display = "none";
+
+    // നിങ്ങളുടെ പുതിയ Apps Script Web App URL
+    var url = "https://script.google.com/macros/s/AKfycbyVSl13Z7gQduWfX5wjEvNPMv_Iy0lyTj-UGOuFHcXTonrdm4cFI0A88BvHsu8PgbOdQw/exec?class=" + cls + "&admission=" + adm;
+
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        loader.style.display = "none";
+        if(data.status === "success") {
+            document.getElementById("resName").innerText = data.name;
+            document.getElementById("resClass").innerText = data.class;
+            document.getElementById("resNo").innerText = data.admission_no;
+            document.getElementById("resTotal").innerText = data.total;
+            
+            var statusEl = document.getElementById("resStatus");
+            statusEl.innerText = data.result_status;
+            
+            var statusText = String(data.result_status).toLowerCase();
+            if (statusText === 'pass' || statusText === 'വിജയിച്ചു') {
+                statusEl.className = 'pass';
+            } else {
+                statusEl.className = 'fail';
+            }
+
+            var marksHtml = "";
+            for (var subject in data.subjects) {
+                // ഇവിടെയാണ് തിരുത്തിയത് (ബാക്ടിക്കുകൾ ഉപയോഗിച്ചു)
+                marksHtml += "<tr><td>" + subject + "</td><td>" + data.subjects[subject] + "</td></tr>";
+            }
+            document.getElementById("marksBody").innerHTML = marksHtml;
+            resultBox.style.display = "block";
+        } else {
+            alert("തന്നിരിക്കുന്ന വിവരങ്ങളിലുള്ള ഒരു വിദ്യാർത്ഥിയെ കണ്ടെത്താനായില്ല. ദയവായി പരിശോധിക്കുക.");
+        }
+    })
+    .catch(error => {
+        loader.style.display = "none";
+        alert("Error: റിസൾട്ട് ലോഡ് ചെയ്യാൻ സാധിച്ചില്ല.");
+        console.error(error);
+    });
+}
+</script>
+
+</body>
+</html>
